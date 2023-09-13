@@ -1,8 +1,9 @@
+# Note: Do not include spaces in the directory name
 .DEFAULT_GOAL := static_lib
 
 CC := g++ # compiler
 abs_paths := $(shell pwd)
-lib_name := TinyOctomap
+lib_name := $(notdir $(abs_paths))
 
 # Compile static library
 lib_srcs := $(shell find src -name *.c)
@@ -26,5 +27,8 @@ static_lib: ../lib$(lib_name).a
 
 clean: 
 	@rm -rf objs ../lib$(lib_name).a
+
+debug:
+	@echo $(lib_name)
 
 .PHONY : static_lib
