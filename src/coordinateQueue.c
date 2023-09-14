@@ -2,7 +2,7 @@
 #include "stdio.h"
 #include "stdbool.h"
 #include "coordinateQueue.h"
-
+#include "crossSystem_tool.h"
 void initCoordinateQueue(CoordinateQueue_t *queue) {
     queue->front = 0;
     queue->tail = 0;
@@ -11,7 +11,7 @@ void initCoordinateQueue(CoordinateQueue_t *queue) {
 
 bool push_CoordinateQueue(CoordinateQueue_t *queue, coordinate_t data){
     if(isCoordinateQueueFull(queue)){
-        printf("CoordinateQueue is full!\n");
+        printF("CoordinateQueue is full!\n");
         return false;
     }
     queue->data[queue->tail] = data;
@@ -22,7 +22,7 @@ bool push_CoordinateQueue(CoordinateQueue_t *queue, coordinate_t data){
 
 coordinate_t pop_CoordinateQueue(CoordinateQueue_t *queue){
     if(isCoordinateQueueEmpty(queue)){
-        printf("CoordinateQueue is empty!\n");
+        printF("CoordinateQueue is empty!\n");
         coordinate_t data = {-1,-1,-1};
         return data;
     }
