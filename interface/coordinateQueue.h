@@ -2,6 +2,7 @@
 #define COORDINATEQUEUE_H
 #include "stdint.h"
 #define MAX_QUEUE_SIZE 150
+#include "stdbool.h"
 
 typedef struct
 {

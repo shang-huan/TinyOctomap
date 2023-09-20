@@ -3,6 +3,7 @@
 #include "stdbool.h"
 #include "coordinateQueue.h"
 #include "crossSystem_tool.h"
+#include <stdint.h>
 void initCoordinateQueue(CoordinateQueue_t *queue) {
     queue->front = 0;
     queue->tail = 0;
@@ -23,7 +24,7 @@ bool push_CoordinateQueue(CoordinateQueue_t *queue, coordinate_t data){
 coordinate_t pop_CoordinateQueue(CoordinateQueue_t *queue){
     if(isCoordinateQueueEmpty(queue)){
         printF("CoordinateQueue is empty!\n");
-        coordinate_t data = {-1,-1,-1};
+        coordinate_t data = {static_cast<uint16_t>(-1),static_cast<uint16_t>(-1),static_cast<uint16_t>(-1)};
         return data;
     }
     coordinate_t data = queue->data[queue->front];

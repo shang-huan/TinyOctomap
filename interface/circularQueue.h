@@ -1,6 +1,7 @@
 #ifndef CIRCULARQUEUE_H
 #define CIRCULARQUEUE_H
 #define MAX_QUEUE_SIZE 150
+#include "stdbool.h"
 
 typedef struct{
     short data[MAX_QUEUE_SIZE];
