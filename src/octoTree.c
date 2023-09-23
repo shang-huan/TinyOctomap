@@ -30,6 +30,14 @@ octoTree_t *octoTreeInit() {
     return &g_OctoTree;
 }
 
+direction_t increment_direction(direction_t dir)
+{
+    int i = (int)dir;
+    int j = i + 1 ;
+    direction_t finalDir = (direction_t)j;
+    return finalDir;
+}
+
 /**
  * @brief Add an observation to the octomap.
  *
