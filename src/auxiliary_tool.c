@@ -1,39 +1,442 @@
 #include "octoMap.h"
 #include "octoTree.h"
 #include "auxiliary_tool.h"
+#include "math.h"
+#include "crossSystem_tool.h"
+#include "math1.h"
 
-void calPoint(coordinate_t* Start_Point,direction_t direction,int length,coordinate_t* End_Point)
+
+double caldistance(coordinateF_t* A,coordinateF_t* B){
+    return sqrt( pow(A->x - B->x,2) + pow(A->y - B->y,2) + pow(A->z - B->z,2) );
+}
+
+void determine_threshold(coordinateF_t *point)
+{
+    point->x = Myfmax(Myfmin(point->x, WIDTH_X), 0);
+    point->y = Myfmax(Myfmin(point->y, WIDTH_Y), 0);
+    point->z = Myfmax(Myfmin(point->z, WIDTH_Z), 0);
+}
+
+direction_t intTodirection(int dir){
+    switch (dir)
+    {
+    case 0:
+        return UP;
+    case 1:
+        return DOWN;
+    case 2:
+        return LEFT;
+    case 3:
+        return RIGHT;
+    case 4:
+        return FRONT;
+    case 5:
+        return BACK;
+    default:
+        printF("wrong input direction\n");
+        return UP;
+    }
+}
+
+coordinateF_t rot(float roll, float pitch, float yaw, coordinateF_t *origin, coordinateF_t *point)
+{
+    float cosr = Mycos((double)roll * M_PI / 180);
+    float cosp = Mycos((double)pitch * M_PI / 180);
+    float cosy = Mycos((double)yaw * M_PI / 180);
+
+    float sinr = Mysin((double)roll * M_PI / 180);
+    float sinp = Mysin((double)pitch * M_PI / 180);
+    float siny = Mysin((double)yaw * M_PI / 180);
+
+    float roty[3][3];
+    float rotp[3][3];
+    float rotr[3][3];
+
+    roty[0][0] = cosy;
+    roty[0][1] = -siny;
+    roty[0][2] = 0;
+    roty[1][0] = siny;
+    roty[1][1] = cosy;
+    roty[1][2] = 0;
+    roty[2][0] = 0;
+    roty[2][1] = 0;
+    roty[2][2] = 1;
+
+    rotp[0][0] = cosp;
+    rotp[0][1] = 0;
+    rotp[0][2] = sinp;
+    rotp[1][0] = 0;
+    rotp[1][1] = 1;
+    rotp[1][2] = 0;
+    rotp[2][0] = -sinp;
+    rotp[2][1] = 0;
+    rotp[2][2] = cosp;
+
+    rotr[0][0] = 1;
+    rotr[0][1] = 0;
+    rotr[0][2] = 0;
+    rotr[1][0] = 0;
+    rotr[1][1] = cosr;
+    rotr[1][2] = -sinr;
+    rotr[2][0] = 0;
+    rotr[2][1] = sinr;
+    rotr[2][2] = cosr;
+    float tmp[3][1];
+    tmp[0][0] = point->x - origin->x;
+    tmp[1][0] = point->y - origin->y;
+    tmp[2][0] = point->z - origin->z;
+
+    dot(roty, tmp);
+    dot(rotp, tmp);
+    dot(rotr, tmp);
+    coordinateF_t tmp2 = {tmp[0][0] + origin->x, tmp[1][0] + origin->y, tmp[2][0] + origin->z};
+
+    determine_threshold(&tmp2);
+    return tmp2;
+}
+
+void dot(float A[][3], float B[][1])
+{
+    float C[3][1];
+    for (int i = 0; i < 3; ++i)
+    {
+        C[i][0] = 0;
+        for (int k = 0; k < 3; k++)
+        {
+            C[i][0] += A[i][k] * B[k][0];
+        }
+    }
+    for (int i = 0; i < 3; ++i)
+    {
+        B[i][0] = C[i][0];
+    }
+}
+
+bool calPoint_Sim(coordinateF_t* Start_Point,direction_t direction,int length,coordinateF_t* End_Point)
 {
     switch (direction) {
     case UP:
         End_Point->x = Start_Point->x;
         End_Point->y = Start_Point->y;
         End_Point->z = Start_Point->z + length;
-        break;
+        return TRUE;
     case DOWN:
         End_Point->x = Start_Point->x;
         End_Point->y = Start_Point->y;
         End_Point->z = Start_Point->z - length;
-        break;
+        return TRUE;
     case LEFT:
         End_Point->x = Start_Point->x;
         End_Point->y = Start_Point->y - length;
         End_Point->z = Start_Point->z;
-        break;
+        return TRUE;
     case RIGHT:
         End_Point->x = Start_Point->x;
         End_Point->y = Start_Point->y + length;
         End_Point->z = Start_Point->z;
-        break;
+        return TRUE;
     case FRONT:
         End_Point->x = Start_Point->x + length;
         End_Point->y = Start_Point->y;
         End_Point->z = Start_Point->z;
-        break;
+        return TRUE;
     case BACK:
         End_Point->x = Start_Point->x - length;
         End_Point->y = Start_Point->y;
         End_Point->z = Start_Point->z;
+        return TRUE;
+    default:
+        printF("wrong input direction\n");
+        return FALSE;
+    }
+}
+
+bool cal_Point(measure_t *measurement, coordinateF_t *start_point, direction_t dir, coordinateF_t *res)
+{
+    float pitch = -1 * measurement->pitch;
+    float roll = measurement->roll;
+    float yaw = measurement->yaw;
+    switch (dir)
+    {
+    case FRONT:
+        if (measurement->data[0] < SENSOR_TH && measurement->data[0] > TREE_RESOLUTION)
+        {
+            coordinateF_t point = {start_point->x + measurement->data[0], start_point->y, start_point->z};
+            *res = rot(roll, pitch, yaw, start_point, &point);
+            return TRUE;
+        }
+        break;
+    case BACK:
+        if (measurement->data[1] < SENSOR_TH && measurement->data[1] > TREE_RESOLUTION)
+        {
+            coordinateF_t point = {start_point->x - measurement->data[1], start_point->y, start_point->z};
+            *res = rot(roll, pitch, yaw, start_point, &point);
+            return TRUE;
+        }
+        break;
+    case LEFT:
+        if (measurement->data[2] < SENSOR_TH && measurement->data[2] > TREE_RESOLUTION)
+        {
+            coordinateF_t point = {start_point->x, start_point->y + measurement->data[2], start_point->z};
+            *res = rot(roll, pitch, yaw, start_point, &point);
+            return TRUE;
+        }
+        break;
+    case RIGHT:
+        if (measurement->data[3] < SENSOR_TH && measurement->data[3] > TREE_RESOLUTION)
+        {
+            coordinateF_t point = {start_point->x, start_point->y - measurement->data[3], start_point->z};
+            *res = rot(roll, pitch, yaw, start_point, &point);
+            return TRUE;
+        }
+        break;
+    case UP:
+        if (measurement->data[4] < SENSOR_TH && measurement->data[4] > TREE_RESOLUTION)
+        {
+            coordinateF_t point = {start_point->x, start_point->y, start_point->z + measurement->data[4]};
+            *res = rot(roll, pitch, yaw, start_point, &point);
+            return TRUE;
+        }
+        break;
+    case DOWN:
+        if (measurement->data[5] < SENSOR_TH && measurement->data[5] > TREE_RESOLUTION)
+        {
+            coordinateF_t point = {start_point->x, start_point->y, start_point->z - measurement->data[5]};
+            *res = rot(roll, pitch, yaw, start_point, &point);
+            return TRUE;
+        }
+        break;
+    default:
+        printF("wrong input direction\n");
         break;
     }
+    return FALSE;
+}
+
+bool cal_PointByLength(float length, float pitch, float roll, float yaw, coordinateF_t *start_point, direction_t dir, coordinateF_t *res)
+{
+    switch (dir)
+    {
+    case FRONT:
+    {
+        coordinateF_t point = {start_point->x + length, start_point->y, start_point->z};
+        *res = rot(roll, pitch, yaw, start_point, &point);
+        return TRUE;
+    }
+    break;
+    case BACK:
+    {
+        coordinateF_t point = {start_point->x - length, start_point->y, start_point->z};
+        *res = rot(roll, pitch, yaw, start_point, &point);
+        return TRUE;
+    }
+    break;
+    case LEFT:
+    {
+        coordinateF_t point = {start_point->x, start_point->y + length, start_point->z};
+        *res = rot(roll, pitch, yaw, start_point, &point);
+        return TRUE;
+    }
+    break;
+    case RIGHT:
+    {
+        coordinateF_t point = {start_point->x, start_point->y - length, start_point->z};
+        *res = rot(roll, pitch, yaw, start_point, &point);
+        return TRUE;
+    }
+    break;
+    case UP:
+    {
+        coordinateF_t point = {start_point->x, start_point->y, start_point->z + length};
+        *res = rot(roll, pitch, yaw, start_point, &point);
+        return TRUE;
+    }
+    break;
+    case DOWN:
+    {
+        coordinateF_t point = {start_point->x, start_point->y, start_point->z - length};
+        *res = rot(roll, pitch, yaw, start_point, &point);
+        return TRUE;
+    }
+    break;
+    default:
+        printF("wrong input direction\n");
+        break;
+    }
+    return FALSE;
+}
+
+/**
+ * @brief find the target node's parent node and and save the maxDepth by reference
+ * @param octoNode self
+ * @param point the point coordinate of the observation --- (x,y,z): tuple
+ * @param origin origin of this node --- (x,y,z): tuple
+ * @param width width of this node --- int
+ * @param maxDepth maximum depth this node can be branched --- int
+ */
+octoNode_t *findTargetParent(octoNode_t *octoNode, octoMap_t *octoMap, coordinate_t *point, coordinate_t origin, uint16_t* width, uint8_t* maxDepth)
+{
+    if (octoNode->isLeaf == 1)
+    {
+        return NULL;
+    }
+    else
+    {
+        uint8_t index = octoNodeIndex(point, origin, *width);
+        // if the node is leaf node, return its parent node
+        if (octoMap->octoNodeSet->setData[octoNode->children].data[index].isLeaf)
+            return octoNode;
+        coordinate_t newOrigin = calOrigin(index, origin, *width);
+        *width = *width/2;
+        *maxDepth = *maxDepth - 1;
+        return findTargetParent(&octoMap->octoNodeSet->setData[octoNode->children].data[index], octoMap, point, newOrigin, width, maxDepth);
+    }
+}
+
+/**
+ * @brief calculate the node's cost,while the node contains the point
+ * @param point the calculating point coordinate --- (x,y,z): tuple
+ * @param octoTree self
+ * @param octoMap self
+ */
+costParameter_t Cost(coordinate_t *point, octoTree_t *octoTree, octoMap_t *octoMap,octoNode_t *LastoctoNode)
+{
+    costParameter_t costParameter;
+    uint8_t Depth = octoTree->maxDepth;
+    uint16_t Width = octoTree->width;
+    octoNode_t *octoNode = findTargetParent(octoTree->root, octoMap, point, octoTree->origin, &Width, &Depth);
+    if (octoNode == NULL){ // if the node is root, just return the cost
+        costParameter.node = octoTree->root;
+        //costParameter.cost = 8 * Depth;
+        costParameter.cost_prune = 0;
+        costParameter.p_not_occupied = 1-P_GLOBAL;
+        return costParameter;
+    }
+    uint8_t index = octoNodeIndex(point, octoNode->origin, Width);
+    costParameter.node = &octoMap->octoNodeSet->setData[octoNode->children].data[index];
+    //Duplicate node, no contribution
+    if(costParameter.node == LastoctoNode){
+        costParameter.node = LastoctoNode;
+        costParameter.cost_prune = 0;
+        costParameter.p_not_occupied = 0;
+        return costParameter;
+    }
+    //if the node is known to be not occupied, continue
+    if(costParameter.node->logOdds == LOG_ODDS_FREE){
+        costParameter.node = LastoctoNode;
+        costParameter.cost_prune = 0;
+        costParameter.p_not_occupied = 1;
+        return costParameter;
+    }
+    //if the node is known to be occupied, break
+    else if(costParameter.node->logOdds == LOG_ODDS_OCCUPIED){
+        costParameter.cost_prune = 0;
+        costParameter.p_not_occupied = 0;
+        return costParameter;
+    }
+    
+    double cost_prune = 0;
+    double p;
+    int Freenum = 0;
+    int Occupiednum = 0;
+    int i;
+    for (i = 0; i < 8; ++i)
+    {
+        octoNode_t *temp = &octoMap->octoNodeSet->setData[octoNode->children].data[i];
+        // if the node is not leaf, return 0
+        if (!temp->isLeaf)
+        {
+            break;
+        }
+        // if the node is leaf, check its occupy
+        if(temp->logOdds == LOG_ODDS_FREE)
+            ++Freenum;
+        else if(temp->logOdds == LOG_ODDS_OCCUPIED)
+            ++Occupiednum;
+    }
+    if(Freenum == 0 && Occupiednum != 0){ // occupied
+        p = P_GLOBAL + (1 - P_GLOBAL) * (double)Occupiednum / 8;
+        costParameter.p_not_occupied = 1-p;
+        cost_prune = 8 * pow(p, 8-Occupiednum);
+    }
+    else if(Occupiednum == 0 && Freenum != 0){ // not occupied
+        p = (1 - P_GLOBAL) + P_GLOBAL * (double)Freenum / 8;
+        costParameter.p_not_occupied = p;
+        cost_prune = 8 * pow(p, 8-Freenum);
+    }
+    else{ // unknown
+        if(Freenum > Occupiednum)
+            costParameter.p_not_occupied = (1 - P_GLOBAL) + P_GLOBAL * (double)(Freenum-Occupiednum) / 8;
+        else
+            costParameter.p_not_occupied = 1 - (P_GLOBAL + (1 - P_GLOBAL) * (double)(Occupiednum-Freenum) / 8);
+        if(Freenum == Occupiednum && Freenum == 0)
+            cost_prune = 8 * pow(1 - P_GLOBAL, 8) + 8 * pow(P_GLOBAL, 8);
+        else    
+            cost_prune = 0;
+    }
+    costParameter.cost_prune = cost_prune;
+    return costParameter;
+    // return cost，octonode，p_not_occupied
+}
+
+Cost_C_t Cost_Sum(octoTree_t *octoTree, octoMap_t *octoMap, coordinate_t *start,direction_t dir){
+    int16_t dx = 0;
+    int16_t dy = 0;
+    int16_t dz = 0;
+    switch (dir)
+    {
+    case UP:
+        dz = TREE_RESOLUTION;
+        break;
+    case DOWN:
+        dz = -TREE_RESOLUTION;
+        break;
+    case LEFT:
+        dy = TREE_RESOLUTION;
+        break;
+    case RIGHT:
+        dy = -TREE_RESOLUTION;
+        break;
+    case FRONT:
+        dx = TREE_RESOLUTION;
+        break;
+    case BACK:
+        dx = -TREE_RESOLUTION;
+        break;
+    default:
+        break;
+    }
+
+    double cost_prune = 0;
+    double income_info = 0;
+    double p_iter = 1;
+    coordinate_t point = *start;
+    costParameter_t costParameter_item;
+    octoNode_t *LastoctoNode = NULL;
+    Cost_C_t cost_C;
+    while (point.x >= 0 && point.x <= TREE_CENTER_X * 2 
+        && point.y >= 0 && point.y <= TREE_CENTER_Y * 2 
+        && point.z >= BOTTOM && point.z <= TREE_CENTER_Z * 2 && point.z <= TOP
+        && p_iter >= 0.00001)
+    {
+        point.x += dx;
+        point.y += dy;
+        point.z += dz;
+
+        costParameter_item = Cost(&point, octoTree, octoMap, LastoctoNode);
+        if (costParameter_item.p_not_occupied == 0) // the node is occupied, break
+            break;
+        if (costParameter_item.node == LastoctoNode || costParameter_item.p_not_occupied == 1) // the node is same or not occupied
+            continue;
+        cost_prune += p_iter * costParameter_item.cost_prune;
+        income_info += p_iter * 1;
+        p_iter *= costParameter_item.p_not_occupied;
+        if (costParameter_item.node == octoTree->root)
+            break;
+        LastoctoNode = costParameter_item.node;
+    }
+    // printF("cost_sum:%f,icome_info:%f\n",cost_sum,income_info);
+    cost_C.cost_prune = cost_prune;
+    cost_C.income_info = income_info;
+    return cost_C;
 }

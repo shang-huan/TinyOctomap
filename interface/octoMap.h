@@ -4,36 +4,35 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-// for strong platform
-// remember to change the bit length of the children member in octoNode_t
-// #define uint16_t uint32_t
-// #define int16_t int32_t
-// typedef int32_t setIndex_t;
-// #define BIT_SCALE 2
-
 // for weak platform
-typedef short setIndex_t;
+typedef uint16_t setIndex_t;
 
-// for strong or weak(<=4096) platform
-// determined by the bit width of the children member in octoNode_t
-#define NODE_SET_SIZE 4096
-// #define NODE_SET_SIZE 4096*4
+#ifdef CRAZYFLIE    
+    // 弱平台
+    #define NODE_SET_SIZE 4096
+#else
+    #define NODE_SET_SIZE 4096*4
+#endif
 
 #define BOOL uint16_t
 #define TRUE 1
 #define FALSE 0
 
+// 树范围
 #define TREE_CENTER_X 128
 #define TREE_CENTER_Y 128
 #define TREE_CENTER_Z 128
 #define TREE_RESOLUTION 4
 #define TREE_MAX_DEPTH 6
+
+// 节点状态更新及更新布长
 #define LOG_ODDS_OCCUPIED 6
 #define LOG_ODDS_FREE 0
 #define LOG_ODDS_UNKNOWN 3
+#define LOG_ODDS_DIFF_STEP 3
+// 节点状态
 #define LOG_ODDS_OCCUPIED_FLAG 1
 #define LOG_ODDS_FREE_FLAG 0
-#define LOG_ODDS_DIFF_STEP 3
 
 // coordinate
 typedef struct
@@ -44,30 +43,25 @@ typedef struct
 } coordinate_t;
 
 // OctoNode
-
-typedef struct
-{
-    uint16_t children : 12 ; // first child node index (the following 7 children are in order, rft, rbt, lbt, lft, rfn, rbn, lbn, lfn)
-    uint16_t logOdds : 3 ;   // occupation probability level
-    uint16_t isLeaf : 1 ;    // whether is leaf node
-    // uint16_t children  ; // first child node index (the following 7 children are in order, rft, rbt, lbt, lft, rfn, rbn, lbn, lfn)
-    // uint16_t logOdds  ;   // occupation probability level
-    // uint16_t isLeaf  ;    // whether is leaf node
-    // // just for readable logging, you can remove this member onboard
-    coordinate_t origin;    // origin coordinate of the voxel node
-    uint16_t width;
-    uint8_t uav_id;
-} octoNode_t;
-// strong platform (test fail)
-// typedef struct
-// {
-//     uint16_t children; // first child node index (the following 7 children are in order, rft, rbt, lbt, lft, rfn, rbn, lbn, lfn)
-//     uint16_t logOdds;   // occupation probability level
-//     uint16_t isLeaf;    // whether is leaf node
-//     // just for readable logging, you can remove this member onboard
-//     coordinate_t origin;    // origin coordinate of the voxel node
-//     uint16_t width;
-// } octoNode_t;
+#ifdef CRAZYFLIE
+    // 弱平台
+    typedef struct
+    {
+        uint16_t children : 12 ; // first child node index (the following 7 children are in order, rft, rbt, lbt, lft, rfn, rbn, lbn, lfn)
+        uint16_t logOdds : 3 ;   // occupation probability level
+        uint16_t isLeaf : 1 ;    // whether is leaf node
+    }
+#else
+    typedef struct
+    {
+        uint16_t children ; // first child node index (the following 7 children are in order, rft, rbt, lbt, lft, rfn, rbn, lbn, lfn)
+        uint16_t logOdds ;   // occupation probability level
+        uint16_t isLeaf ;    // whether is leaf node
+        coordinate_t origin;    // origin coordinate of the voxel node
+        uint16_t width;
+        uint8_t uav_id;
+    } octoNode_t;
+#endif
 
 // OctoNodeSet
 typedef struct
@@ -81,11 +75,11 @@ typedef struct
     octoNodeSetItem_t setData[NODE_SET_SIZE];     // data set
     setIndex_t freeQueueEntry;                    // first free item index
     setIndex_t fullQueueEntry;                    // first full item index
-    short numOccupied;
-    short numFree;
-    short length;
-    unsigned int volumeFree;
-    unsigned int volumeOccupied;
+    short numOccupied;  // number of occupied nodes
+    short numFree;  // number of free nodes
+    short length;   
+    unsigned int volumeFree;  // volume of free nodes
+    unsigned int volumeOccupied; // volume of occupied nodes
 } octoNodeSet_t;
 
 // OctoTree
@@ -107,21 +101,5 @@ typedef struct
 } octoMap_t;
 
 void octoMapInit(octoMap_t *octoMap);
-
-// CostParameter
-typedef struct
-{
-    double cost;    // cost of the node
-    octoNode_t *node; // the node 
-    double p_not_occupied; // the probability of the node is not occupied
-} costParameter_t;
-
-// Cost_C
-typedef struct
-{   
-    double cost_prune;
-    double income_info;
-}Cost_C_t;
-
 void recursiveExportOctoMap(octoMap_t* octoMap, octoNode_t* node, coordinate_t origin, uint16_t width, FILE* f_octoMap);
 #endif

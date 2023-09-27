@@ -140,7 +140,7 @@ void recursiveExportOctoMap(octoMap_t* octoMap, octoNode_t* node, coordinate_t o
         // DEBUG_PRINT("node->x = %d, node->y = %d, node->z = %d, node->width = %d, node->logOdds = %d\n", node->origin.x, node->origin.y, node->origin.z, width, node->logOdds);
         // fprintf(fp, "%d, %d, %d, %d, %d\n", node->origin.x, node->origin.y, node->origin.z, width, node->logOdds);
     } else {
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 8; ++i) {
             if (octoNodeHasChildren(node) && width > octoMap->octoTree->resolution) {
                 coordinate_t newOrigin = calOrigin(i,origin,width);
                 recursiveExportOctoMap(octoMap, &octoMap->octoNodeSet->setData[node->children].data[i], newOrigin, width / 2, f_octoMap);
@@ -152,7 +152,7 @@ void recursiveExportOctoMap(octoMap_t* octoMap, octoNode_t* node, coordinate_t o
 void iterativeExportOctoMap(octoMap_t* octoMap) {
     octoNode_t* cur;
     int leafCount = 0;
-    for (int i = 0; i < NODE_SET_SIZE; i++) {
+    for (int i = 0; i < NODE_SET_SIZE; ++i) {
         for (int j = 0; j < 8; j++) {
             cur = &octoMap->octoNodeSet->setData[i].data[j];
             if (cur->isLeaf) {
@@ -181,7 +181,7 @@ void printOctoMapNodeDistribution(octoMap_t* octoMap, int times, FILE *fp) {
     int occupiedCount = 0;
     int freeCount = 0;
     int unknownCount = 0;
-    for (int i = 0; i < NODE_SET_SIZE; i++) {
+    for (int i = 0; i < NODE_SET_SIZE; ++i) {
         for (int j = 0; j < 8; j++) {
             nodeCount++;
             octoNode_t* node = &octoMap->octoNodeSet->setData[i].data[j];

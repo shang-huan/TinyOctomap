@@ -11,7 +11,7 @@ void octoNodeSetInit(octoNodeSet_t *nodeSet)
     nodeSet->length = 0;
     nodeSet->numFree = 0;
     nodeSet->numOccupied = 0;
-    for (i = 0; i < NODE_SET_SIZE; i++)
+    for (i = 0; i < NODE_SET_SIZE; ++i)
     {
         nodeSet->setData[i].next = i;
         nodeSet->setData[i].next += 1;
@@ -52,7 +52,7 @@ BOOL octoNodeSetFree(octoNodeSet_t *nodeSet,
     if (-1 == delItem)
         return TRUE;
     // init each node
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 8; ++i)
     {
         octoNodeInit(&nodeSet->setData[delItem].data[i]);
     }
