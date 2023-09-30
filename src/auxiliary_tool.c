@@ -111,8 +111,7 @@ void dot(float A[][3], float B[][1])
         B[i][0] = C[i][0];
     }
 }
-
-bool calPoint_Sim(coordinateF_t* Start_Point,direction_t direction,int length,coordinateF_t* End_Point)
+bool calPoint_Sim(coordinate_t* Start_Point,direction_t direction,int length,coordinate_t* End_Point)
 {
     switch (direction) {
     case UP:
@@ -426,7 +425,14 @@ Cost_C_t Cost_Sum(octoTree_t *octoTree, octoMap_t *octoMap, coordinate_t *start,
         costParameter_item = Cost(&point, octoTree, octoMap, LastoctoNode);
         if (costParameter_item.p_not_occupied == 0) // the node is occupied, break
             break;
-        if (costParameter_item.node == LastoctoNode || costParameter_item.p_not_occupied == 1) // the node is same or not occupied
+        if (costParameter_item.node == LastoctoNode)
+        {
+            continue;
+        }
+        else{
+            LastoctoNode = costParameter_item.node;
+        }
+        if(costParameter_item.p_not_occupied == 1) // the node is same or not occupied
             continue;
         cost_prune += p_iter * costParameter_item.cost_prune;
         income_info += p_iter * 1;

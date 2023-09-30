@@ -62,7 +62,7 @@ direction_t intTodirection(int dir);
 coordinateF_t rot(float roll, float pitch, float yaw, coordinateF_t* origin, coordinateF_t* point);
 void dot(float A[][3], float B[][1]);
 // 终点坐标计算
-bool calPoint_Sim(coordinateF_t* Start_Point,direction_t direction,int length,coordinateF_t* End_Point); // 仿真程序计算点坐标
+bool calPoint_Sim(coordinate_t* Start_Point,direction_t direction,int length,coordinate_t* End_Point); // 仿真程序计算点坐标
 bool cal_Point(measure_t* measurement,coordinateF_t* start_point,direction_t dir,coordinateF_t* res);   // 真实计算点坐标
 bool cal_PointByLength(float length,float pitch,float roll,float yaw,coordinateF_t* start_point,direction_t dir,coordinateF_t *res); // 固定长度计算点坐标
 // 收益计算
