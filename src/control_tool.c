@@ -8,6 +8,40 @@
 #include "math1.h"
 #include "math.h"
 
+void inituavRange(uavRange_t* uavRange){
+    uavRange->measurement.data[0] = 0;
+    uavRange->measurement.data[1] = 0;
+    uavRange->measurement.data[2] = 0;
+    uavRange->measurement.data[3] = 0;
+    uavRange->measurement.data[4] = 0;
+    uavRange->measurement.data[5] = 0;
+    uavRange->measurement.roll = 0;
+    uavRange->measurement.pitch = 0;
+    uavRange->measurement.yaw = 0;
+    uavRange->current_point.x = 0;
+    uavRange->current_point.y = 0;
+    uavRange->current_point.z = 0;
+}
+
+void inituavControl(uavControl_t* uavControl){
+    uavControl->next_point.x = 0;
+    uavControl->next_point.y = 0;
+    uavControl->next_point.z = 0;
+    inituavRange(&uavControl->uavRange);
+    for(int i = 0; i < 6; ++i){
+        uavControl->direction_weight[i] = 1;
+    }
+    uavControl->lastdir = 0;
+    initQueue(&uavControl->queue);
+    for(int i = 0; i < WINDOW_SIZE; ++i){
+        uavControl->loops[i] = 0;
+    }
+    uavControl->flag_jump = false;
+    uavControl->Jump_Dir = FRONT;
+    uavControl->Jump_Rest_Step = 0;
+}
+
+
 void UpdateMap(octoMap_t *octoMap, mapping_req_payload_t *mappingRequestPayload,uint8_t uav_id)
 {
     for(int i = 0;i<mappingRequestPayload->len;++i){
@@ -64,6 +98,7 @@ void CalCandidates(coordinateF_t *candidates, measure_t *measurement, coordinate
 }
 
 bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t** uavs){
+    // printF("CalBestCandinates\n");
     coordinateF_t candinates[6];
     coordinate_t item_point;
     double item_candinateCost = 0, max_candinateCost = 0;
@@ -95,10 +130,15 @@ bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t*
         {
             item_sum.income_info = DISCIPLINE;
         }
-        min_distance = CalMinDistance(uavs, &candinates[i]);
+        // printF("cost_prune:%d,income_info:%d\n",item_sum.cost_prune,item_sum.income_info);
+        min_distance = CalMinDistance(uavControl, uavs, &candinates[i]);
         item_candinateCost = (double)uavControl->direction_weight[i] * (PROBABILITY_MEM(octoMap) * item_sum.cost_prune * COST_PRUNE_TIMES +
                                                     (1.0 - PROBABILITY_MEM(octoMap)) * item_sum.income_info * INCOME_INFO_TIMES);
-        item_candinateCost = CalAvoidWeight(min_distance) * item_candinateCost;
+        if(CalAvoidWeight(min_distance) != 1){
+            printF("candinateCost_pre:%f,",item_candinateCost);
+            item_candinateCost = CalAvoidWeight(min_distance) * item_candinateCost;
+            printF("candinateCost_re:%f\n",item_candinateCost);
+        }
         if (item_candinateCost > max_candinateCost){
             dir_next = i;
             max_candinateCost = item_candinateCost;
@@ -112,7 +152,7 @@ bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t*
         return true;
     }
     else{
-        printF("no next point\n");
+        // printF("no next point\n");
         return false;
     }
 }
@@ -120,18 +160,19 @@ bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t*
 bool JumpLocalOp(uavControl_t *uavControl,uavControl_t** uavs){
     float length = Myfmin(uavControl->uavRange.measurement.data[uavControl->Jump_Dir],300);
     coordinateF_t item_end_point;
-    if(length > STRIDE + AVOID_DISTANCE){
+    if(length > STRIDE + AVOID_DISTANCE && uavControl->Jump_Rest_Step > 0){
         #ifdef HOST
             calPoint_Sim(&uavControl->uavRange.current_point, uavControl->Jump_Dir, STRIDE, &item_end_point);
         #else
             cal_PointByLength(STRIDE, -1 * uavControl->uavRange.measurement.pitch, uavControl->uavRange.measurement.roll, uavControl->uavRange.measurement.yaw, &uavControl->uavRange.current_point, uavControl->Jump_Dir, &item_end_point);
         #endif
         // 细节待商榷
-        if(CalMinDistance(uavs, &item_end_point) < SAFE_DISTANCE){
+        if(CalMinDistance(uavControl, uavs, &item_end_point) < SAFE_DISTANCE){
             uavControl->flag_jump = false;
             return false;
         }
         uavControl->next_point = item_end_point;
+        --uavControl->Jump_Rest_Step;
         if(length < STRIDE * 2 + AVOID_DISTANCE){
             uavControl->flag_jump = false;
         }
@@ -139,6 +180,7 @@ bool JumpLocalOp(uavControl_t *uavControl,uavControl_t** uavs){
     }
     else{
         uavControl->flag_jump = false;
+        uavControl->Jump_Rest_Step = 0;
         return false;
     }
 }
@@ -157,10 +199,11 @@ bool CalNextPoint(uavControl_t* uavControl,octoMap_t* octoMap,uavControl_t** uav
         if(!uavControl->flag_jump && !CalBestCandinates(octoMap, uavControl,uavs)){
             uavControl->Jump_Dir = GetRandomDir(&uavControl->uavRange.measurement);
             if(uavControl->Jump_Dir == ERROR_DIR){
-                printF("no next Jump_Dir\n");
+                printF("no next Jump_Dir\n\n\n\n\n\n");
                 return false;
             }
             uavControl->flag_jump = true;
+            uavControl->Jump_Rest_Step = JUMP_MAX_STEP;
         }
     }
     else
@@ -172,24 +215,29 @@ bool CalNextPoint(uavControl_t* uavControl,octoMap_t* octoMap,uavControl_t** uav
         }
         uavControl->Jump_Dir = GetRandomDir(&uavControl->uavRange.measurement);
         if(uavControl->Jump_Dir == ERROR_DIR){
-            printF("no next Jump_Dir\n");
+            printF("no next Jump_Dir\n\n\n\n\n\n\n");
             return false;
         }
         uavControl->flag_jump = true;
+        uavControl->Jump_Rest_Step = JUMP_MAX_STEP;
     }
     if(uavControl->flag_jump){
         if(!JumpLocalOp(uavControl,uavs)){
             --uavControl->loops[index_loop];
+            printF("isn't safe\n");
             return CalNextPoint(uavControl, octoMap,uavs);
         }
     }
     return true;
 }
 
-float CalMinDistance(uavControl_t** uavs, coordinateF_t* point){
+float CalMinDistance(uavControl_t* uavControl,uavControl_t** uavs, coordinateF_t* point){
     float min_distance = 30000;
     float distance = 0;
     for(int i = 0;i<MAX_MULTIRANGER_UAV_NUM;++i){
+        if(uavs[i] == uavControl){
+            continue;
+        }
         distance = caldistance(&uavs[i]->uavRange.current_point, point);
         if(distance < min_distance){
             min_distance = distance;

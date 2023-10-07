@@ -3,6 +3,7 @@
 #include "stdint.h"
 #include "octoTree.h"
 #include "auxiliary_tool.h"
+#include "MySystem.h"
 #define MAPPING_REQUEST_PAYLOAD_LENGTH 1
 #define AUTOFLY_PACKET_HEAD_LENGTH 4
 #define AUTOFLY_PACKET_MUT 60 - AUTOFLY_PACKET_HEAD_LENGTH

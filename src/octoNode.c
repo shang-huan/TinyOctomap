@@ -12,8 +12,10 @@ void octoNodeInit(octoNode_t *octoNode)
     octoNode->children = 0;
     octoNode->logOdds = LOG_ODDS_UNKNOWN;
     octoNode->isLeaf = TRUE;
-    octoNode->width = 0;
-    octoNode->uav_id = 0;
+    #ifndef CRAZYFLIE 
+        octoNode->width = 0;
+        octoNode->uav_id = 0;
+    #endif
 }
 
 /**

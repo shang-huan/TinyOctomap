@@ -2,7 +2,7 @@
 #define __OCTONODESET_H__
 
 #include "octoMap.h"
-
+#include "MySystem.h"
 #define TRUE 1
 #define FALSE 0
 

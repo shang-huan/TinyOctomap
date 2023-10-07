@@ -1,4 +1,5 @@
 #include <string.h>
+#include "MySystem.h"
 #define abs(x) ((x)>0?(x):-(x))
 
 double Myfmin(double a,double b);

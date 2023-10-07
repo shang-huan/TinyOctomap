@@ -130,12 +130,18 @@ void testFromFile(coordinate_t *(start_points[FILE_LENGTH]), coordinate_t *(end_
 
 int leafCountRecursive = 0;
 void recursiveExportOctoMap(octoMap_t* octoMap, octoNode_t* node, coordinate_t origin, uint16_t width, FILE* f_octoMap){
+    // printF("[recursiveExportOctoMap]width:%d\n",width);
     if (node->isLeaf) {
         if(LOG_ODDS_FREE == node->logOdds ){
-            fprintf(f_octoMap,",FN,,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width);   
+            // printF(",FN,,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width);
+            fprintf(f_octoMap,",FN,,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width);
         }
         else if(LOG_ODDS_OCCUPIED == node->logOdds){
+            // printF(",ON,,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width);
             fprintf(f_octoMap,",ON,,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width);
+        }
+        else{
+            // printF("NULL");
         }
         // DEBUG_PRINT("node->x = %d, node->y = %d, node->z = %d, node->width = %d, node->logOdds = %d\n", node->origin.x, node->origin.y, node->origin.z, width, node->logOdds);
         // fprintf(fp, "%d, %d, %d, %d, %d\n", node->origin.x, node->origin.y, node->origin.z, width, node->logOdds);
