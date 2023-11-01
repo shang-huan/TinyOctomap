@@ -58,6 +58,7 @@ typedef struct
     double income_info;
 }Cost_C_t;
 double caldistance(coordinateF_t* A,coordinateF_t* B);
+double caldistance_int(coordinate_t* A,coordinate_t* B);
 void determine_threshold(coordinateF_t *point);
 direction_t intTodirection(int dir);
 // 坐标转换

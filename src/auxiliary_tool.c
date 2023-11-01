@@ -9,6 +9,9 @@
 double caldistance(coordinateF_t* A,coordinateF_t* B){
     return sqrt( pow(A->x - B->x,2) + pow(A->y - B->y,2) + pow(A->z - B->z,2) );
 }
+double caldistance_int(coordinate_t* A,coordinate_t* B){
+    return sqrt( pow(A->x - B->x,2) + pow(A->y - B->y,2) + pow(A->z - B->z,2) );
+}
 
 void determine_threshold(coordinateF_t *point)
 {

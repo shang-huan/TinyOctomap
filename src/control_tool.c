@@ -106,7 +106,7 @@ bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t*
     CalCandidates(candinates, &uavControl->uavRange.measurement, &uavControl->uavRange.current_point);
     max_candinateCost = 0;
     short dir_next = -1;
-    float min_distance = 0;
+    float min_distance = 10;
     for(int i = 0;i<6;++i){
         item_candinateCost = 0;
         item_sum.cost_prune = 0;
