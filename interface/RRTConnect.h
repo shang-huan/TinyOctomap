@@ -31,5 +31,3 @@ void steer(coordinate_t *X_near, coordinate_t *X_rand,vertex_t* X_new);
 bool obstaclefree(octoTree_t *octoTree, octoMap_t *octoMap, coordinate_t start, coordinate_t end);
 BOOL addToArray_vertex(array_t* array, vertex_t* element);
 BOOL addToArray_coordinate(array_t *array, coordinate_t* element, short index_p);
-
-// void writefile(array_t* array, char* filename,int flag);
