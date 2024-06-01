@@ -7,6 +7,8 @@
 #include <unistd.h>
 #endif
 
+#define ENABLE_TO_PRINT
+
 #ifdef HOST
 #include <stdio.h>
 #endif
@@ -30,6 +32,9 @@ void sleep_ms(int milliseconds) // cross-platform sleep function
 
 void printF(const char *format, ...)// cross-platform print function
 {
+    #ifndef ENABLE_TO_PRINT
+        return;
+    #endif
     va_list args;
     va_start(args, format);
 #ifdef HOST

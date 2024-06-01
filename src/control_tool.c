@@ -56,8 +56,11 @@ direction_t GetRandomDir(measure_t *measurement)
     direction_t maxdir = intTodirection(Myrand() % 6);
     int i = 0;
     // Guaranteed to get a feasible direction
-    while (measurement->data[maxdir] < STRIDE + AVOID_DISTANCE && i < 20)
+    while ( measurement->data[maxdir] < STRIDE + fmax(AVOID_DISTANCE,BOTTOM) && i < 20)
     {
+        if(measurement->data[maxdir] >= STRIDE + AVOID_DISTANCE && maxdir != DOWN){
+            break;
+        }
         maxdir = intTodirection(Myrand() % 6);
         ++i;
     }
@@ -66,7 +69,7 @@ direction_t GetRandomDir(measure_t *measurement)
     ++i;
     if (i == 20)
         return ERROR_DIR;
-    if (measurement->data[dir] > measurement->data[maxdir])
+    if (measurement->data[dir] > measurement->data[maxdir] && dir != DOWN)
         maxdir = dir;
     return maxdir;
 }
@@ -107,6 +110,11 @@ bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t*
     max_candinateCost = 0;
     short dir_next = -1;
     float min_distance = 10;
+    // bool flagPrintF = false;
+    // if(uavControl->uavRange.current_point.z == 20){
+    //     flagPrintF = true;
+    //     printF("-------------");
+    // }
     for(int i = 0;i<6;++i){
         item_candinateCost = 0;
         item_sum.cost_prune = 0;
@@ -135,14 +143,17 @@ bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t*
         item_candinateCost = (double)uavControl->direction_weight[i] * (PROBABILITY_MEM(octoMap) * item_sum.cost_prune * COST_PRUNE_TIMES +
                                                     (1.0 - PROBABILITY_MEM(octoMap)) * item_sum.income_info * INCOME_INFO_TIMES);
         if(CalAvoidWeight(min_distance) != 1){
-            printF("candinateCost_pre:%f,",item_candinateCost);
+            // printF("candinateCost_pre:%f,",item_candinateCost);
             item_candinateCost = CalAvoidWeight(min_distance) * item_candinateCost;
-            printF("candinateCost_re:%f\n",item_candinateCost);
+            // printF("candinateCost_re:%f\n",item_candinateCost);
         }
         if (item_candinateCost > max_candinateCost){
             dir_next = i;
             max_candinateCost = item_candinateCost;
         }
+        // if(flagPrintF){
+        //     printF("candinateCost:%f,dir_next:%d\n",item_candinateCost,dir_next);
+        // }
     }
     if(dir_next != -1){
         uavControl->direction_weight[dir_next] = DIRECTION_AWARD;
@@ -161,6 +172,11 @@ bool JumpLocalOp(uavControl_t *uavControl,uavControl_t** uavs){
     float length = Myfmin(uavControl->uavRange.measurement.data[uavControl->Jump_Dir],300);
     coordinateF_t item_end_point;
     if(length > STRIDE + AVOID_DISTANCE && uavControl->Jump_Rest_Step > 0){
+        if(length < STRIDE + BOTTOM && uavControl->Jump_Dir == DOWN){
+            uavControl->flag_jump = false;
+            uavControl->Jump_Rest_Step = 0;
+            return false;
+        }
         #ifdef HOST
             calPoint_Sim(&uavControl->uavRange.current_point, uavControl->Jump_Dir, STRIDE, &item_end_point);
         #else
