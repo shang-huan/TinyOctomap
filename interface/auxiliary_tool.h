@@ -6,12 +6,12 @@
 #include "octoMap.h"
 
 
-#define BOTTOM 20
-#define TOP 60
+#define BOTTOM 30
+#define TOP 65
 #define WIDTH_X TREE_CENTER_X * 2
 #define WIDTH_Y TREE_CENTER_Y * 2
 #define WIDTH_Z TREE_CENTER_Z * 2
-#define SENSOR_TH 300
+#define SENSOR_TH 200
 // CostParameter
 typedef enum direction_t{
     UP = 0,

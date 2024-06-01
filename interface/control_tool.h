@@ -11,7 +11,7 @@
 #define WINDOW_SIZE 30 
 
 #ifdef HOST
-    #define AVOID_DISTANCE TREE_RESOLUTION
+    #define AVOID_DISTANCE TREE_RESOLUTION*4
     #define STRIDE TREE_RESOLUTION
 #else
     #define AVOID_DISTANCE 15
@@ -27,8 +27,8 @@
 
 #define JUMP_MAX_STEP 5
 
-#define DETECT_DISTANCE 40.0
-#define SAFE_DISTANCE 20.0
+#define DETECT_DISTANCE 25.0
+#define SAFE_DISTANCE 15.0
 
 typedef struct uavControl_t
 {
