@@ -148,13 +148,11 @@ void octoNodeUpdate(octoNode_t *octoNode, octoMap_t *octoMap, coordinate_t *poin
     #ifndef CRAZYFLIE
         octoNode->origin = origin;
         octoNode->width = width;
+        octoNode->uav_id = uav_id;
     #endif
     if (maxDepth == 0)
     {
         octoNodeUpdateLogOdds(octoMap, octoNode, diffLogOdds);
-        #ifndef CRAZYFLIE
-            octoNode->uav_id = uav_id;
-        #endif
         return;
     }
     else
@@ -217,6 +215,9 @@ BOOL octoNodeCheckChildrenLogOdds(octoNode_t *octoNode, octoMap_t *octoMap)
  */
 void octoNodeUpdateLogOdds(octoMap_t* octoMap,octoNode_t *octoNode, uint8_t diffLogOdds)
 {
+    if(octoNode->logOdds == LOG_ODDS_OCCUPIED || octoNode->logOdds == LOG_ODDS_FREE){
+        return;
+    }
     if (octoNode->logOdds > LOG_ODDS_FREE && diffLogOdds == LOG_ODDS_FREE_FLAG) {
         if(octoNode->logOdds == LOG_ODDS_OCCUPIED){
             --octoMap->octoNodeSet->numOccupied;

@@ -42,6 +42,7 @@ void octoMapInit(octoMap_t *octoMap)
     printF("octoMap.octoNodeSet->length = %d, octoMap.octoNodeSet->numFree = %d, octoMap.octoNodeSet->numOccupied = %d\n\n", octoMap->octoNodeSet->length, octoMap->octoNodeSet->numFree, octoMap->octoNodeSet->numOccupied);
     printF("octoMap.octoNodeSet->volumeFree = %d, octoMap.octoNodeSet->volumeOccupied = %d\n\n", octoMap->octoNodeSet->volumeFree, octoMap->octoNodeSet->volumeOccupied);
 }
+
 void testFromFile(coordinate_t *(start_points[FILE_LENGTH]), coordinate_t *(end_points[FILE_LENGTH]))
 {
     char *start_file = FILE_NAME_START;
@@ -134,11 +135,11 @@ void recursiveExportOctoMap(octoMap_t* octoMap, octoNode_t* node, coordinate_t o
     if (node->isLeaf) {
         if(LOG_ODDS_FREE == node->logOdds ){
             // printF(",FN,,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width);
-            fprintf(f_octoMap,",FN,,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width);
+            fprintf(f_octoMap,",FN,,%d,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width,node->uav_id);
         }
         else if(LOG_ODDS_OCCUPIED == node->logOdds){
             // printF(",ON,,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width);
-            fprintf(f_octoMap,",ON,,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width);
+            fprintf(f_octoMap,",ON,,%d,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width,node->uav_id);
         }
         else{
             // printF("NULL");
@@ -172,7 +173,7 @@ void iterativeExportOctoMap(octoMap_t* octoMap) {
 }
 
 void exportOctoMap(octoMap_t* octoMap) {
-    FILE *fp = fopen("assets/octoMap.csv", "w");
+    FILE *fp = fopen("assets/result/octoMap.csv", "w");
     if (fp == NULL) {
         printF("无法打开文件 octoMap.csv\n");
     }

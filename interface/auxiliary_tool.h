@@ -6,8 +6,8 @@
 #include "octoMap.h"
 
 
-#define BOTTOM 30
-#define TOP 65
+#define BOTTOM 0
+#define TOP 60
 #define WIDTH_X TREE_CENTER_X * 2
 #define WIDTH_Y TREE_CENTER_Y * 2
 #define WIDTH_Z TREE_CENTER_Z * 2

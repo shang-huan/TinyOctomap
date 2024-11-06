@@ -11,6 +11,8 @@ void octoNodeSetInit(octoNodeSet_t *nodeSet)
     nodeSet->length = 0;
     nodeSet->numFree = 0;
     nodeSet->numOccupied = 0;
+    nodeSet->volumeFree = 0;
+    nodeSet->volumeOccupied = 0;
     for (i = 0; i < NODE_SET_SIZE; ++i)
     {
         nodeSet->setData[i].next = i;

@@ -51,7 +51,7 @@ void octoTreeInsertPoint(octoTree_t *octoTree, octoMap_t *octoMap, coordinate_t 
  */
 void octoTreeRayCasting(octoTree_t *octoTree, octoMap_t *octoMap, coordinate_t *startPoint, coordinate_t *endPoint, uint8_t uav_id) {
     // call bresenham algorithm to insert free voxel
-    bresenham3D(octoTree, octoMap, startPoint, endPoint,uav_id);
+    bresenham3D(octoTree, octoMap, startPoint, endPoint, uav_id);
     // Insert occupancy voxel
     octoTreeInsertPoint(octoTree, octoMap, endPoint, LOG_ODDS_OCCUPIED_FLAG, uav_id);
 }

@@ -5,13 +5,13 @@
 #include "circularQueue.h"
 #include "Packet.h"
 #include "MySystem.h"
-#define MAX_MULTIRANGER_UAV_NUM 3
+#define MAX_MULTIRANGER_UAV_NUM 4
 
 #define MAX_LOOP 5 
 #define WINDOW_SIZE 30 
 
 #ifdef HOST
-    #define AVOID_DISTANCE TREE_RESOLUTION*4
+    #define AVOID_DISTANCE TREE_RESOLUTION
     #define STRIDE TREE_RESOLUTION
 #else
     #define AVOID_DISTANCE 15
@@ -27,8 +27,8 @@
 
 #define JUMP_MAX_STEP 5
 
-#define DETECT_DISTANCE 25.0
-#define SAFE_DISTANCE 15.0
+#define DETECT_DISTANCE 20.0
+#define SAFE_DISTANCE 10.0
 
 typedef struct uavControl_t
 {
