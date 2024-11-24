@@ -5,7 +5,7 @@
 #include "circularQueue.h"
 #include "Packet.h"
 #include "MySystem.h"
-#define MAX_MULTIRANGER_UAV_NUM 4
+#define MAX_MULTIRANGER_UAV_NUM 1
 
 #define MAX_LOOP 5 
 #define WINDOW_SIZE 30 
