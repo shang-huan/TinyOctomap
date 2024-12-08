@@ -132,7 +132,7 @@ void testFromFile(coordinate_t *(start_points[FILE_LENGTH]), coordinate_t *(end_
 int leafCountRecursive = 0;
 void recursiveExportOctoMap(octoMap_t* octoMap, octoNode_t* node, coordinate_t origin, uint16_t width, FILE* f_octoMap){
     // printF("[recursiveExportOctoMap]width:%d\n",width);
-    if (node->isLeaf) {
+    if (node->isLeaf == 1) {
         if(LOG_ODDS_FREE == node->logOdds ){
             // printF(",FN,,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width);
             fprintf(f_octoMap,",FN,,%d,%d,%d,%d,%d\n",origin.x,origin.y,origin.z,width,node->uav_id);
