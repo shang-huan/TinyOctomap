@@ -16,9 +16,9 @@ void octoMapInit(octoMap_t *octoMap)
     octoNodeSet_t* nodeSet;
     nodeSet = (octoNodeSet_t*)malloc(sizeof(octoNodeSet_t));
     // print nodeSet size
-    printF("sizeof(octoNode) = %lu\n", sizeof(octoNode_t));
+    // printF("sizeof(octoNode) = %lu\n", sizeof(octoNode_t));
     octoNodeSetInit(nodeSet);
-    printF("sizeof(octoNode) = %lu\n", sizeof(octoNode_t));
+    // printF("sizeof(octoNode) = %lu\n", sizeof(octoNode_t));
 
     // init octoMap
     octoMap->octoTree = octoTreeInit();
@@ -27,20 +27,20 @@ void octoMapInit(octoMap_t *octoMap)
     // avoid index 0 is used (octoNodeHasChildren will fail)
     octoMap->octoTree->root->children = octoNodeSetMalloc(octoMap->octoNodeSet);
     // print octoMap
-    printF("octoMap.octoTree->center = (%d, %d, %d)\n", octoMap->octoTree->center.x, octoMap->octoTree->center.y, octoMap->octoTree->center.z);
-    printF("octoMap.octoTree->origin = (%d, %d, %d)\n", octoMap->octoTree->origin.x, octoMap->octoTree->origin.y, octoMap->octoTree->origin.z);
-    printF("octoMap.octoTree->resolution = %d\n", octoMap->octoTree->resolution);
-    printF("octoMap.octoTree->maxDepth = %d\n", octoMap->octoTree->maxDepth);
-    printF("octoMap.octoTree->width = %d\n", octoMap->octoTree->width);
-    // print octoMap.octoTree->root
-    printF("octoMap.octoTree->root->children = %d\n", octoMap->octoTree->root->children);
-    printF("octoMap.octoTree->root->logOdds = %d\n", octoMap->octoTree->root->logOdds);
-    printF("octoMap.octoTree->root->isLeaf = %d\n", octoMap->octoTree->root->isLeaf);
-    // print octoMap.octoNodeSet
-    printF("octoMap.octoNodeSet->freeQueueEntry = %d, octoMap.octoNodeSet->fullQueueEntry = %d\n\n", octoMap->octoNodeSet->freeQueueEntry, octoMap->octoNodeSet->fullQueueEntry);
-    //print the length and numFree and numOccupied
-    printF("octoMap.octoNodeSet->length = %d, octoMap.octoNodeSet->numFree = %d, octoMap.octoNodeSet->numOccupied = %d\n\n", octoMap->octoNodeSet->length, octoMap->octoNodeSet->numFree, octoMap->octoNodeSet->numOccupied);
-    printF("octoMap.octoNodeSet->volumeFree = %d, octoMap.octoNodeSet->volumeOccupied = %d\n\n", octoMap->octoNodeSet->volumeFree, octoMap->octoNodeSet->volumeOccupied);
+    // printF("octoMap.octoTree->center = (%d, %d, %d)\n", octoMap->octoTree->center.x, octoMap->octoTree->center.y, octoMap->octoTree->center.z);
+    // printF("octoMap.octoTree->origin = (%d, %d, %d)\n", octoMap->octoTree->origin.x, octoMap->octoTree->origin.y, octoMap->octoTree->origin.z);
+    // printF("octoMap.octoTree->resolution = %d\n", octoMap->octoTree->resolution);
+    // printF("octoMap.octoTree->maxDepth = %d\n", octoMap->octoTree->maxDepth);
+    // printF("octoMap.octoTree->width = %d\n", octoMap->octoTree->width);
+    // // print octoMap.octoTree->root
+    // printF("octoMap.octoTree->root->children = %d\n", octoMap->octoTree->root->children);
+    // printF("octoMap.octoTree->root->logOdds = %d\n", octoMap->octoTree->root->logOdds);
+    // printF("octoMap.octoTree->root->isLeaf = %d\n", octoMap->octoTree->root->isLeaf);
+    // // print octoMap.octoNodeSet
+    // printF("octoMap.octoNodeSet->freeQueueEntry = %d, octoMap.octoNodeSet->fullQueueEntry = %d\n\n", octoMap->octoNodeSet->freeQueueEntry, octoMap->octoNodeSet->fullQueueEntry);
+    // //print the length and numFree and numOccupied
+    // printF("octoMap.octoNodeSet->length = %d, octoMap.octoNodeSet->numFree = %d, octoMap.octoNodeSet->numOccupied = %d\n\n", octoMap->octoNodeSet->length, octoMap->octoNodeSet->numFree, octoMap->octoNodeSet->numOccupied);
+    // printF("octoMap.octoNodeSet->volumeFree = %d, octoMap.octoNodeSet->volumeOccupied = %d\n\n", octoMap->octoNodeSet->volumeFree, octoMap->octoNodeSet->volumeOccupied);
 }
 
 void testFromFile(coordinate_t *(start_points[FILE_LENGTH]), coordinate_t *(end_points[FILE_LENGTH]))

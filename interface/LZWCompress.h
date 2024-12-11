@@ -37,5 +37,10 @@ typedef struct LZWDict {
 void initTrie(Trie* tree);
 void initLZWDict(LZWDict* lzwDict);
 
-uint16_t LZWCompressData(uint8_t* data,uint16_t dataLength,LZWDict* lzwDict, uint8_t* newData, uint16_t newDataMaxLength);
+// LZW压缩,新数据127表示位0x7F,128以上将占两个字节表示0x01ff,通过末尾的高位是否为1判断是否连续
+uint16_t LZWEncode(uint8_t* data,uint16_t dataLength,LZWDict* lzwDict, uint8_t* newData, uint16_t newDataMaxLength);
+
+uint16_t LZWDecode(uint8_t* data,uint16_t dataLength,LZWDict* lzwDict, uint8_t* newData, uint16_t newDataMaxLength);
+
+void printLZWDict(LZWDict* lzwDict,uint16_t printSize);
 #endif

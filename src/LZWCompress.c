@@ -1,12 +1,13 @@
 #include "stdlib.h"
 #include "stdbool.h"
+#include "time.h"
 #include "LZWCompress.h"
 #include "crossSystem_tool.h"
 
 uint16_t mallocTrieNode(Trie* tree);
 uint16_t addLZWDictRecode(LZWDict* lzwDict,value_t value, uint16_t pre);
 uint16_t searchTrieNode(Trie* tree, TrieNode* root, value_t value);
-bool addTrieNode(Trie* tree, TrieNode* root, value_t value, uint16_t seq);
+uint16_t addTrieNode(Trie* tree, TrieNode* root, value_t value, uint16_t seq);
 
 void initLZWDict(LZWDict* lzwDict){
     lzwDict->size = 0;
@@ -60,45 +61,49 @@ uint16_t searchTrieNode(Trie* tree, TrieNode* root, value_t value){
     return NULL_SEQ;
 }
 
-bool addTrieNode(Trie* tree, TrieNode* root, value_t value, uint16_t seq){
+uint16_t addTrieNode(Trie* tree, TrieNode* root, value_t value, uint16_t seq){
     uint16_t p = root->child;
     if(p == NULL_SEQ){
         uint16_t index = mallocTrieNode(tree);
         if(index == NULL_SEQ){
-            return false;
+            return NULL_SEQ;
         }
         tree->nodes[index].value = value;
         tree->nodes[index].seq = seq;
         root->child = index;
-        return true;
+        return index;
     }
     if(tree->nodes[p].value == value){
-        return true;
+        return p;
     }
     uint16_t q = tree->nodes[p].brother;
     while (q != NULL_SEQ)
     {
         if(tree->nodes[q].value == value){
-            return true;
+            return q;
         }
         p = q;
         q = tree->nodes[q].brother;
     }
     uint16_t index = mallocTrieNode(tree);
     if(index == NULL_SEQ){
-        return false;
+        return NULL_SEQ;
     }
     tree->nodes[index].value = value;
     tree->nodes[index].seq = seq;
     tree->nodes[p].brother = index;
-    return true;
+    return index;
 }
 
-uint16_t LZWCompressData(uint8_t* data,uint16_t dataLength,LZWDict* lzwDict, uint8_t* newData, uint16_t newDataMaxLength){
+uint16_t LZWEncode(uint8_t* data,uint16_t dataLength,LZWDict* lzwDict, uint8_t* newData, uint16_t newDataMaxLength){
+
+    time_t startTime = time(NULL);
 
     Trie trie;
     initTrie(&trie);
-    TrieNode* root = &trie.nodes[0];
+    uint16_t rootIndex = mallocTrieNode(&trie);
+    trie.root = rootIndex;
+    TrieNode* root = &trie.nodes[trie.root];
 
     initLZWDict(lzwDict);
 
@@ -118,33 +123,139 @@ uint16_t LZWCompressData(uint8_t* data,uint16_t dataLength,LZWDict* lzwDict, uin
                     printF("newData is full\n");
                     return 0;
                 }
-                newData[top++] = p->seq;
+                if(p->seq >= 0x80){
+                    newData[top++] = p->seq >> 7;
+                    if(top >= newDataMaxLength){
+                        printF("newData is full\n");
+                        return 0;
+                    }
+                    newData[top] = p->seq & 0x7F;
+                    newData[top] |= 0x80;
+                    top++;
+                }else{
+                    newData[top++] = p->seq;
+                }
                 p = root;
                 curDepth = 0;
             }
         }else{
-            // 未找到，添加到字典
+            // 未找到,添加字典,并且添加到Trie
             uint16_t seq = addLZWDictRecode(lzwDict, val, p->seq);
             if(seq == NULL_SEQ){
                 printF("addLZWDictRecode failed\n");
                 return 0;
             }
-            bool res = addTrieNode(&trie, p, val, seq);
-            if(!res){
+            uint16_t nodeIndex = addTrieNode(&trie, p, val, seq);
+            if(nodeIndex == NULL_SEQ){
                 printF("addTrieNode failed\n");
                 return 0;
             }
-            // 记录当前节点
+            
             if(top >= newDataMaxLength){
                 printF("newData is full\n");
                 return 0;
             }
-            newData[top++] = p->seq;
+            p = &trie.nodes[nodeIndex];
+            if(p->seq >= 0x80){
+                newData[top++] = p->seq >> 7;
+                if(top >= newDataMaxLength){
+                    printF("newData is full\n");
+                    return 0;
+                }
+                newData[top] = p->seq & 0x7F;
+                newData[top] |= 0x80;
+                top++;
+            }else{
+                newData[top++] = p->seq;
+            }
             p = root;
             curDepth = 0;
-            // 回溯，重新检查当前数据
-            i--;
         }
     }
+    if(p!=root){
+        if(top >= newDataMaxLength){
+            printF("newData is full\n");
+            return 0;
+        }
+        if(p->seq >= 0x80){
+            newData[top++] = p->seq >> 7;
+            if(top >= newDataMaxLength){
+                printF("newData is full\n");
+                return 0;
+            }
+            newData[top] = p->seq & 0x7F;
+            newData[top] |= 0x80;
+            top++;
+        }else{
+            newData[top++] = p->seq;
+        }
+    }
+
+    // printF("LZWEncode time:%lds\n",time(NULL)-startTime);
+
     return top;
+}
+
+uint16_t LZWDecode(uint8_t* data, uint16_t dataLength, LZWDict* lzwDict, uint8_t* newData, uint16_t newDataMaxLength) {
+
+    time_t startTime = time(NULL);
+
+    uint16_t newDataTop = 0;
+
+    for (int i = 0; i < dataLength; i++) {
+        uint16_t index = data[i];
+
+        // 检查是否有第二个字节，并且第二个字节的最高位为 1
+        if (i + 1 < dataLength && (data[i + 1] & 0x80)) {
+            index = (index << 7) | (data[i + 1] & 0x7F);
+            i++;  // 跳过第二个字节
+        }
+
+        // 检查索引是否在字典范围内
+        if (index >= lzwDict->size) {
+            printF("index:%d is out of range\n", index);
+            return NULL_SEQ;
+        }
+
+        uint16_t p = index;
+        uint16_t length = 0;
+
+        // 计算符号的长度
+        while (p != NULL_SEQ) {
+            p = lzwDict->nodes[p].pre;
+            length++;
+        }
+
+        p = index;
+        uint16_t newDataTopTemp = newDataTop;
+        newDataTop += length;
+        
+        // 检查 newData 是否足够存放解码后的数据
+        if (newDataTop >= newDataMaxLength) {
+            printF("[LZWDecode] newData is full\n");
+            return NULL_SEQ;
+        }
+
+        // 将解码的数据填入 newData
+        while (p != NULL_SEQ) {
+            newData[newDataTopTemp + length - 1] = lzwDict->nodes[p].value;
+            p = lzwDict->nodes[p].pre;
+            length--;
+        }
+    }
+
+    // 解码完成后，返回 newDataTop，表示解码后的数据长度
+
+    // printF("LZWDecode time:%lds\n",time(NULL)-startTime);
+
+    return newDataTop;
+}
+
+
+void printLZWDict(LZWDict* lzwDict,uint16_t printSize){
+    printF("LZWDict size:%d\n",lzwDict->size);
+    for (int i = 0; i < lzwDict->size && i < printSize; i++)
+    {
+        printF("index:%d,pre:%d,value:%d\n",i,lzwDict->nodes[i].pre,lzwDict->nodes[i].value);
+    }
 }

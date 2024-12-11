@@ -9,9 +9,11 @@
 #include "LZWCompress.h"
 #include "huffmanTree.h"
 
-#define MAX_SERIALIZER_SIZE 4*1024
-#define MAX_DICT_SIZE 2*1024
+#define MAX_SERIALIZER_SIZE 8*1024
+#define MAX_DICT_SIZE 4*1024
 #define MAX_DATA_SIZE MAX_SERIALIZER_SIZE+MAX_DICT_SIZE
+
+#define CHECK_CODE_INIT_VALUE 0xff
 
 typedef enum{
     FREE = 0,
@@ -56,11 +58,11 @@ bool serializeOctoMap(octoMap_t *octoMap, octoMapSerializerResult_t *result);
 // 八叉树反序列化 
 bool deserializeOctoMap(octoMap_t *octoMap, octoMapSerializerResult_t *data);
 
-// 压缩数据
-bool compressData(octoMapSerializerResult_t *data);
-
 // 校验两颗树是否一致
 bool checkOctoMapisConsist(octoMap_t *octoMap1, octoMap_t *octoMap2);
+
+// 校验两个数据是否一致
+bool checkData(uint8_t* data1, uint8_t* data2, uint16_t dataLength1, uint16_t dataLength2);
 
 // 生成octoMapSerializerResult_t
 bool generateOctoMapSerializerResult(octoMap_t *octoMap, octoMapSerializerResult_t *result, DictType dictType);

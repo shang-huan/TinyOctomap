@@ -4,8 +4,7 @@
 #include "stdint.h"
 #include "stdbool.h"
 
-#define value_t uint16_t
-#define long_value_t uint32_t
+#define value_t uint8_t
 #define times_t uint16_t
 
 #define MAX_DICT_SIZE 512
@@ -38,5 +37,5 @@ void sortDictByTimes(dict_t *dict, int left, int right);
 // 从data中生成新字典，并排序
 bool fillDictFromData(uint8_t *data, uint16_t dataLength, dict_t *dict);
 
-void printDict(dict_t *dict);
+void printDict(dict_t *dict,uint16_t printSize);
 #endif

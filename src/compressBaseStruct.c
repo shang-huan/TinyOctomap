@@ -27,17 +27,6 @@ void swapDict(dict_t *dict, int i, int j){
     dict->times[j] = temp_2;
 }
 
-uint16_t findMid(dict_t *dict_t,int left,int right){
-    int mid = (left + right) / 2;
-    if(dict_t->times[left] >= dict_t->times[mid] && dict_t->times[left] <= dict_t->times[right]){
-        return left;
-    }else if(dict_t->times[mid] >= dict_t->times[left] && dict_t->times[mid] <= dict_t->times[right]){
-        return mid;
-    }else{
-        return right;
-    }
-}
-
 //快速排序
 void quickSort(dict_t *dict, int left, int right){
     if (left >= right) {
@@ -50,10 +39,7 @@ void quickSort(dict_t *dict, int left, int right){
         return;
     }
 
-
     // 在仅两位时发生错误，例：19，20，基准为19，但由于i=j，找到20，然后退出循环发生19和20互换，导致错误
-    int midIndex = findMid(dict,left,right); // 三数取中
-    swapDict(dict, left, midIndex);
     int key = dict->times[left];  // 选择基准值
     int i = left + 1;
     int j = right;
@@ -106,10 +92,17 @@ bool fillDictFromData(uint8_t *data, uint16_t dataLength, dict_t *dict){
             dict->times[val]++;
         }
     }
-    
-    sortDictByTimes(dict,0,MAX_DICT_SIZE-1);
-    printDict(dict);
-    // deleteZeroTimes(dict);
+    // printF("dict size = %d\n", dict->size);
+    int top = 0;
+    for(int i = 0; i < MAX_DICT_SIZE; i++){
+        if(dict->times[i] != NULL_TIMES){
+            dict->value[top] = dict->value[i];
+            dict->times[top] = dict->times[i];
+            top++;
+        }
+    }
+    sortDictByTimes(dict,0,dict->size-1);
+    // printDict(dict,dict->size);
     return true;
 }
 
@@ -142,7 +135,7 @@ void sortDictByTimes(dict_t *dict, int left, int right){
     quickSort(dict, left, right);
 }
 
-void printDict(dict_t *dict){
+void printDict(dict_t *dict,uint16_t printSize){
     for(int i = 0; i < dict->size; i++){
         uint16_t length = dict->value[i] >> 8;
         printF("dict[%d] = %X, times = %d\n", i, dict->value[i], dict->times[i]);

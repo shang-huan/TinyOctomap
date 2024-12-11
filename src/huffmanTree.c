@@ -1,18 +1,22 @@
 #include "stdint.h"
 #include "stdbool.h"
 #include "stdlib.h"
+#include "time.h"
 
 #include "crossSystem_tool.h"
 #include "compressBaseStruct.h"
 #include "huffmanTree.h"
 
-uint32_t newDataExpectedLength = 0;
+#ifdef HUFFMANTREE_TIMES_ENABLE
+    uint32_t newDataExpectedLength = 0;      
+#endif
+
 
 bool push(HeapNode *heap, uint16_t index, times_t times, int size);
 HeapNode pop(HeapNode *heap, int size);
 void adjustHeapUp(HeapNode *heap, int i, int size);
 void adjustHeapDown(HeapNode *heap, int i, int size);
-bool processHuffmanTree(HuffmanTree *tree, uint16_t root, uint8_t length, long_value_t value, long_value_t* values);
+bool processHuffmanTree(HuffmanTree *tree, uint16_t root, uint8_t length, huffman_code_t value, huffman_code_t* values);
 
 void initHuffmanTree(HuffmanTree *tree){
     tree->size = 0;
@@ -20,7 +24,9 @@ void initHuffmanTree(HuffmanTree *tree){
     tree->free = 0;
     for(int i = 0; i < MAX_HUFFMAN_TREE_SIZE; i++){
         tree->nodes[i].value = NULL_VALUE;
-        tree->nodes[i].times = NULL_TIMES;
+        #ifdef HUFFMANTREE_TIMES_ENABLE
+            tree->nodes[i].times = NULL_TIMES;
+        #endif
         tree->nodes[i].left = NULL_SEQ;
         tree->nodes[i].right = i+1;
     }
@@ -64,6 +70,10 @@ bool push(HeapNode *heap, uint16_t index, times_t times, int size){
 }
 
 HeapNode pop(HeapNode *heap, int size){
+    if(size == 0){
+        printF("heap is empty\n");
+        return (HeapNode){NULL_SEQ, NULL_TIMES};
+    }
     HeapNode res = heap[0];
     heap[0] = heap[size-1];
     adjustHeapDown(heap, 0, size-1);
@@ -99,7 +109,9 @@ void adjustHeapDown(HeapNode *heap, int i, int size){
     }
 }
 
-uint16_t huffmanCode(uint8_t *data, uint16_t dataLength, HuffmanTree *tree, uint8_t *newData, uint16_t newDataMAXLength){
+uint16_t huffmanEnCode(uint8_t *data, uint16_t dataLength, HuffmanTree *tree, uint8_t *newData, uint16_t newDataMAXLength){
+    time_t startTime = time(NULL);
+
     dict_t dict;
     initDict(&dict);
     if(!fillDictFromData(data, dataLength, &dict)){
@@ -123,7 +135,9 @@ uint16_t huffmanCode(uint8_t *data, uint16_t dataLength, HuffmanTree *tree, uint
             return NULL_SEQ;
         }
         tree->nodes[index].value = dict.value[i];
-        tree->nodes[index].times = dict.times[i];
+        #ifdef HUFFMANTREE_TIMES_ENABLE
+            tree->nodes[index].times = dict.times[i];
+        #endif
         push(heap, index, dict.times[i], heapSize);
         heapSize++;
     }
@@ -145,23 +159,26 @@ uint16_t huffmanCode(uint8_t *data, uint16_t dataLength, HuffmanTree *tree, uint
         push(heap, index, left.times+right.times, heapSize);
         heapSize++;
     }
+    // tree Node实际为size-1
     tree->root = heap[0].index;
-    printF("tree.size:%d\n",tree->size);
+    // printF("tree.size:%d\n",tree->size);
 
     // 生成Huffman编码
-    long_value_t values[256];
-    newDataExpectedLength = 0;
+    huffman_code_t values[256];
+    #ifdef HUFFMANTREE_TIMES_ENABLE
+        newDataExpectedLength = 0; 
+    #endif
+    
     if(!processHuffmanTree(tree,tree->root,0,0,values)){
         return NULL_SEQ;
     }
-    printF("newDataExpectedLength:%d\n",newDataExpectedLength);
-    if(newDataExpectedLength > newDataMAXLength*8){
-        printF("newDataExpectedLength:%d,newDataMAXLength:%d,newData will overflow\n",newDataExpectedLength,newDataMAXLength);
-        return NULL_SEQ;
-    }
-
-    
-    
+    #ifdef HUFFMANTREE_TIMES_ENABLE
+        printF("newDataExpectedLength:%d\n",newDataExpectedLength/8);
+        if(newDataExpectedLength > newDataMAXLength*8){
+            printF("newDataExpectedLength:%d,newDataMAXLength:%d,newData will overflow\n",newDataExpectedLength,newDataMAXLength);
+            return NULL_SEQ;
+        }
+    #endif
 
     // 生成newData
     uint8_t curRest = 8;
@@ -171,42 +188,52 @@ uint16_t huffmanCode(uint8_t *data, uint16_t dataLength, HuffmanTree *tree, uint
     for (int i = 0; i < dataLength; i++)
     {
         uint8_t val = data[i];
-        uint32_t code = values[val];
+        huffman_code_t code = values[val];
         // printF("val:%d,length:%d,value:%X,code:%X\n",val,code>>24,code & ((1<<24)-1),code);
-        uint32_t length = code>>24;
-        code = code & ((1<<length)-1);
-        while(curRest < length){
-            newData[newDataTop] |= code>>(length-curRest);
-            code = code & ((1<<(length-curRest))-1);
-            length -= curRest;
-            curRest = 8;
-            newDataTop++;
-            if(newDataTop >= newDataMAXLength){
-                printF("newDataTop:%d,newDataMAXLength:%d,newData is full\n",newDataTop,newDataMAXLength);
-                return NULL_SEQ;
+        huffman_code_t length = (code>>HUFFMAN_CODE_MAX_LENGTH) & HUFFMAN_CODE_MAX_LENGTH_VALUE;
+        code = code & HUFFMAN_CODE_MAX_VALUE;
+        while (length > 0) {
+            // 当前剩余空间足够填充一部分
+            if (curRest <= length) {
+                // 填充当前字节所有剩余空间
+                newData[newDataTop] |= (code >> (length - curRest));  // 获取前 curRest 位
+                code &= ((1 << (length - curRest)) - 1);  // 清除已处理的部分
+                length -= curRest;  // 更新剩余长度
+                newDataTop++;  // 移动到下一个字节
+                curRest = 8;  // 重置 curRest 为 8，表示下一个字节的剩余空间
+                if (newDataTop >= newDataMAXLength) {
+                    printF("newDataTop: %d, newDataMAXLength: %d, newData is full\n", newDataTop, newDataMAXLength);
+                    return NULL_SEQ;
+                }
+                newData[newDataTop] = 0;  // 为下一个字节清零
+            } else {
+                // 当前剩余空间足够填充完整的字节
+                newData[newDataTop] |= code << (curRest - length);  // 填充前 curRest 位
+                curRest -= length;  // 更新 curRest
+                length = 0;  // 所有数据都已处理
             }
-            newData[newDataTop] = 0;
-        }
-        curRest -= length;
-        newData[newDataTop] |= code<<curRest;
-        if(curRest == 0){
-            curRest = 8;
-            newDataTop++;
-            if(newDataTop >= newDataMAXLength){
-                printF("newDataTop:%d,newDataMAXLength:%d,newData is full\n",newDataTop,newDataMAXLength);
-                return NULL_SEQ;
-            }
-            newData[newDataTop] = 0;
         }
     }
-    if(curRest == 8){
-        newDataTop--;
+    // 考虑huffmanTree不定长，可能残余数据，规定最后一个字节的剩余最高位为1，其余为0，若最后一位刚好用完则新开一个字节
+    if(curRest > 0){
+        newData[newDataTop] |= (1 << (curRest - 1));
+        newDataTop++;
+    }else{
+        newDataTop++;
+        if (newDataTop >= newDataMAXLength) {
+            printF("newDataTop: %d, newDataMAXLength: %d, newData is full\n", newDataTop, newDataMAXLength);
+            return NULL_SEQ;
+        }
+        newData[newDataTop] = 0x80;
+        newDataTop++;
     }
+    
+    // printF("HuffmanEnCode time:%lds\n",time(NULL)-startTime);
     return newDataTop;
 }
 
 // 递归遍历Huffman树，生成Huffman编码
-bool processHuffmanTree(HuffmanTree *tree, uint16_t root, uint8_t length, long_value_t value, long_value_t* values){
+bool processHuffmanTree(HuffmanTree *tree, uint16_t root, uint8_t length, huffman_code_t value, huffman_code_t* values){
     // 左取0，右取1
     if(tree->nodes[root].left != NULL_SEQ){
         if(!processHuffmanTree(tree, tree->nodes[root].left, length+1, value<<1, values)){
@@ -219,25 +246,80 @@ bool processHuffmanTree(HuffmanTree *tree, uint16_t root, uint8_t length, long_v
         }
     }
     if(tree->nodes[root].left == NULL_SEQ && tree->nodes[root].right == NULL_SEQ){
-        if(length > 24){
+        if(length > HUFFMAN_CODE_MAX_LENGTH){
             printF("HuffmanTree length is too long\n");
             return false;
         }
         
-        long_value_t code = (length<<24) | value;
-        printF("root:%d,length:%d,value:%X,code:%X,index:%d,times:%d\n",root,length,value,code,tree->nodes[root].value,tree->nodes[root].times);
-        newDataExpectedLength += length * tree->nodes[root].times;
+        huffman_code_t code = (length<<HUFFMAN_CODE_MAX_LENGTH) | value;
+        #ifdef HUFFMANTREE_TIMES_ENABLE
+            newDataExpectedLength += length * tree->nodes[root].times;
+        #endif
         // 记录旧字典和Huffman字典的对应关系
         values[tree->nodes[root].value] = code;
     }
     return true;
 }
 
-void printHuffmanTree(HuffmanTree *tree){
-    for (int i = 0; i < MAX_HUFFMAN_TREE_SIZE; i++)
+void printHuffmanTree(HuffmanTree *tree, uint16_t printSize){
+    printF("HuffmanTree size:%d,root:%d,free:%d\n",tree->size,tree->root,tree->free);
+    for (int i = 0; i < tree->size && i < printSize; i++)
     {
         if(tree->nodes[i].value != NULL_VALUE){
             printF("index:%d,value:%X,left:%d,right:%d\n",i,tree->nodes[i].value,tree->nodes[i].left,tree->nodes[i].right);
         }
     }
 }
+
+uint16_t huffmanDecode(uint8_t *data, uint16_t dataLength, HuffmanTree *tree, uint8_t *newData, uint16_t newDataMAXLength){
+
+    time_t startTime = time(NULL);
+
+    HuffmanTreeNode *root = &tree->nodes[tree->root];
+    HuffmanTreeNode *p = root;
+    uint16_t newDataTop = 0;
+
+    for (int i = 0; i < dataLength; i++) {
+        uint8_t val = data[i];
+
+        for (int j = 0; j < 8; j++) {
+            uint8_t bit = (val >> (7 - j)) & 1;
+            if (bit == 0) {
+                // 转到左子节点
+                if (p->left != NULL_SEQ) {
+                    p = &tree->nodes[p->left];
+                } else {
+                    printF("[HuffmanDecode] left is NULL_SEQ\n");
+                    return NULL_SEQ;
+                }
+            } else {
+                // 处理结束标识
+                if (i == dataLength - 1 &&(val & (1 << (7 - j))-1) == 0) {
+                    break;
+                }
+                // 转到右子节点
+                if (p->right != NULL_SEQ) {
+                    p = &tree->nodes[p->right];
+                } else {
+                    printF("[HuffmanDecode] right is NULL_SEQ\n");
+                    return NULL_SEQ;
+                }
+            }
+
+            // 如果到达叶子节点
+            if (p->left == NULL_SEQ && p->right == NULL_SEQ) {
+                if (newDataTop >= newDataMAXLength) {
+                    printF("[HuffmanDecode] newDataTop: %d, newDataMAXLength: %d, newData is full\n", newDataTop, newDataMAXLength);
+                    return NULL_SEQ;
+                }
+                newData[newDataTop++] = p->value;  // 存储叶子节点的值
+                p = root;  // 返回根节点，开始解码下一个符号
+            }
+        }
+    }
+
+    // printF("HuffmanDecode time:%lds\n",time(NULL)-startTime);
+
+    return newDataTop;
+}
+
