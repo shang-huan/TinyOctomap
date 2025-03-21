@@ -5,7 +5,7 @@
 #include "circularQueue.h"
 #include "Packet.h"
 #include "MySystem.h"
-#define MAX_MULTIRANGER_UAV_NUM 4
+#define MAX_MULTIRANGER_UAV_NUM 3
 
 #define MAX_LOOP 5 
 #define WINDOW_SIZE 30 
@@ -30,6 +30,8 @@
 #define DETECT_DISTANCE 20.0
 #define SAFE_DISTANCE 10.0
 
+#define MAX_CONTROL_RADIUS 1000 // 最大控制半径
+
 typedef struct uavControl_t
 {
     // CoordinateQueue_t paths;
@@ -53,10 +55,10 @@ void inituavControl(uavControl_t* uavControl);
 void UpdateMap(octoMap_t *octoMap, mapping_req_payload_t *mappingRequestPayload,uint8_t uav_id);
 direction_t GetRandomDir(measure_t *measurement);
 void CalCandidates(coordinateF_t *candidates, measure_t *measurement, coordinateF_t *current_F);
-bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t** uavs);
+bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t** uavs,coordinateF_t* edgePoint, uint8_t* weight_100);
 bool JumpLocalOp(uavControl_t *uavControl,uavControl_t** uavs);
 bool UpdateLoops(uavControl_t* uavControl);
-bool CalNextPoint(uavControl_t* uavControl,octoMap_t* octoMap,uavControl_t** uavs);
+bool CalNextPoint(uavControl_t* uavControl,octoMap_t* octoMap,uavControl_t** uavs,coordinateF_t* edgePoint, uint8_t* weight_100);
 float CalMinDistance(uavControl_t* uavControl,uavControl_t** uavs, coordinateF_t* point);
 float CalAvoidWeight(float distance);
 #endif /* CONTROL_TOOL_MUL_H_ */

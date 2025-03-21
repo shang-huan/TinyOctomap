@@ -6,7 +6,7 @@ abs_paths := $(shell pwd)
 lib_name := $(notdir $(abs_paths))
 
 # Compile static library
-lib_srcs := $(shell find src -name *.c)
+lib_srcs := $(shell find src -name '*.c')
 lib_objs := $(patsubst src/%.c,objs/%.o,$(lib_srcs))
 
 lib_include_paths := $(abs_paths)/interface

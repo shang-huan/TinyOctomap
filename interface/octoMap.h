@@ -11,7 +11,7 @@ typedef uint16_t setIndex_t;
     // 弱平台
     #define NODE_SET_SIZE 4096
 #else
-    #define NODE_SET_SIZE 4096*4
+    #define NODE_SET_SIZE (4096*8)
 #endif
 
 #define BOOL uint16_t
@@ -19,11 +19,11 @@ typedef uint16_t setIndex_t;
 #define FALSE 0
 
 // 树范围
-#define TREE_CENTER_X 128
-#define TREE_CENTER_Y 128
-#define TREE_CENTER_Z 128
+#define TREE_CENTER_X 256
+#define TREE_CENTER_Y 256
+#define TREE_CENTER_Z 256
 #define TREE_RESOLUTION 4
-#define TREE_MAX_DEPTH 6
+#define TREE_MAX_DEPTH 7
 
 // 节点状态更新及更新布长
 #define LOG_ODDS_OCCUPIED 6

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "octoNode.h"
 #include "octoNodeSet.h"
+#include "crossSystem_tool.h"
 
 /**
  * @brief Initialize the node
@@ -87,22 +88,22 @@ void octoNodePrune(octoNode_t *octoNode, octoMap_t *octoMap)
  */
 uint8_t octoNodeIndex(coordinate_t *point, coordinate_t origin, uint16_t width)
 {
-    uint8_t index = 0;
-    uint8_t halfWidth = width / 2;
+    uint16_t index = 0;
+    uint16_t halfWidth = width / 2;
     if (point->x >= origin.x + halfWidth)
     {
         index += 1;
-        origin.x += halfWidth;
+        // origin.x += halfWidth;
     }
     if (point->y >= origin.y + halfWidth)
     {
         index += 2;
-        origin.y += halfWidth;
+        // origin.y += halfWidth;
     }
     if (point->z >= origin.z + halfWidth)
     {
         index += 4;
-        origin.z += halfWidth;
+        // origin.z += halfWidth;
     }
     return index;
 }
@@ -118,7 +119,7 @@ uint8_t octoNodeIndex(coordinate_t *point, coordinate_t origin, uint16_t width)
 coordinate_t calOrigin(uint8_t index, coordinate_t origin, uint16_t width)
 {
     coordinate_t newOrigin = origin;
-    uint8_t halfWidth = width / 2;
+    uint16_t halfWidth = width / 2;
     if (index & 1)
     {
         newOrigin.x += halfWidth;
@@ -150,6 +151,9 @@ void octoNodeUpdate(octoNode_t *octoNode, octoMap_t *octoMap, coordinate_t *poin
         octoNode->width = width;
         octoNode->uav_id = uav_id;
     #endif
+    // if(point->x > 256 || point->y > 256 || point->z > 256){
+    //     printF("width:%d,maxDepth:%d,origin:(%d,%d,%d),point:(%d,%d,%d)\n",width,maxDepth,origin.x,origin.y,origin.z,point->x,point->y,point->z);
+    // }
     if (maxDepth == 0)
     {
         octoNodeUpdateLogOdds(octoMap, octoNode, diffLogOdds);

@@ -10,8 +10,8 @@
 #define MAX_TRIE_DEPTH 2
 
 typedef struct{
-    value_t value;
-    uint16_t seq;
+    value_t value; // 字符值
+    uint16_t seq; // 词典序号
     uint16_t child; // 第一个子节点
     uint16_t brother; // 下一个兄弟节点
 }TrieNode;

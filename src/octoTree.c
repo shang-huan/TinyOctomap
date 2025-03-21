@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "octoTree.h"
 #include "octoNodeSet.h"
+#include "crossSystem_tool.h"
 
 /**
  * @brief initialize an octoTree
@@ -38,6 +39,7 @@ octoTree_t *octoTreeInit() {
  * @param diffLogOdds the difference value of logodds, 0: free, 1: occupied
  */
 void octoTreeInsertPoint(octoTree_t *octoTree, octoMap_t *octoMap, coordinate_t *point, uint8_t diffLogOdds, uint8_t uav_id) {
+    // printF("[octoTreeInsertPoint]point:(%d,%d,%d),diffLogOdds:%d\n",point->x,point->y,point->z,diffLogOdds);
     octoNodeUpdate(octoTree->root, octoMap, point, diffLogOdds, octoTree->origin, octoTree->width, octoTree->maxDepth,uav_id);
 }
 
@@ -50,10 +52,12 @@ void octoTreeInsertPoint(octoTree_t *octoTree, octoMap_t *octoMap, coordinate_t 
  * @param diffLogOdds the difference value of logodds, 0: free, 1: occupied
  */
 void octoTreeRayCasting(octoTree_t *octoTree, octoMap_t *octoMap, coordinate_t *startPoint, coordinate_t *endPoint, uint8_t uav_id) {
+    // printF("startPoint:(%d,%d,%d),endPoint:(%d,%d,%d)\n",startPoint->x,startPoint->y,startPoint->z,endPoint->x,endPoint->y,endPoint->z);
     // call bresenham algorithm to insert free voxel
     bresenham3D(octoTree, octoMap, startPoint, endPoint, uav_id);
     // Insert occupancy voxel
     octoTreeInsertPoint(octoTree, octoMap, endPoint, LOG_ODDS_OCCUPIED_FLAG, uav_id);
+    // printF("octoTreeRayCasting has finished!\n");
 }
 
 /**

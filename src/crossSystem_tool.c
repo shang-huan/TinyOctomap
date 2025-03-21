@@ -1,5 +1,6 @@
 #include "crossSystem_tool.h"
 #include "stdarg.h"
+#include <time.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -26,7 +27,10 @@ void sleep_ms(int milliseconds) // cross-platform sleep function
 #ifdef _WIN32
     Sleep(milliseconds);
 #else
-    usleep(milliseconds * 1000);
+    struct timespec ts;
+    ts.tv_sec = milliseconds / 1000; // 秒部分
+    ts.tv_nsec = (milliseconds % 1000) * 1000000; // 纳秒部分
+    nanosleep(&ts, NULL);
 #endif
 }
 

@@ -58,7 +58,8 @@ direction_t GetRandomDir(measure_t *measurement)
     // Guaranteed to get a feasible direction
     while ( measurement->data[maxdir] < STRIDE + fmax(AVOID_DISTANCE,BOTTOM) && i < 20)
     {
-        if(measurement->data[maxdir] >= STRIDE + AVOID_DISTANCE && maxdir != DOWN){
+        // if(measurement->data[maxdir] >= STRIDE + AVOID_DISTANCE && maxdir != DOWN){
+        if(measurement->data[maxdir] >= STRIDE + AVOID_DISTANCE){
             break;
         }
         maxdir = intTodirection(Myrand() % 6);
@@ -69,7 +70,8 @@ direction_t GetRandomDir(measure_t *measurement)
     ++i;
     if (i == 20)
         return ERROR_DIR;
-    if (measurement->data[dir] > measurement->data[maxdir] && dir != DOWN)
+    // if (measurement->data[dir] > measurement->data[maxdir] && dir != DOWN)
+    if (measurement->data[dir] > measurement->data[maxdir])
         maxdir = dir;
     return maxdir;
 }
@@ -100,7 +102,7 @@ void CalCandidates(coordinateF_t *candidates, measure_t *measurement, coordinate
     }
 }
 
-bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t** uavs){
+bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t** uavs,coordinateF_t* edgePoint, uint8_t* weight_100){
     // printF("CalBestCandinates\n");
     coordinateF_t candinates[6];
     coordinate_t item_point;
@@ -119,7 +121,7 @@ bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t*
         item_candinateCost = 0;
         item_sum.cost_prune = 0;
         item_sum.income_info = 0;
-        if (candinates[i].x == 30000 && candinates[i].y == 30000 && candinates[i].z == 30000)
+        if ((candinates[i].x == 30000 && candinates[i].y == 30000 && candinates[i].z == 30000) || caldistance(&candinates[i],edgePoint) > MAX_CONTROL_RADIUS)
         {
             continue;
         }
@@ -147,6 +149,10 @@ bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t*
             item_candinateCost = CalAvoidWeight(min_distance) * item_candinateCost;
             // printF("candinateCost_re:%f\n",item_candinateCost);
         }
+        if(weight_100[i] != 100){
+            printF("weight_100:%d\n",weight_100[i]);
+            item_candinateCost = weight_100[i] * item_candinateCost / 100.0 ;
+        }
         if (item_candinateCost > max_candinateCost){
             dir_next = i;
             max_candinateCost = item_candinateCost;
@@ -172,20 +178,24 @@ bool JumpLocalOp(uavControl_t *uavControl,uavControl_t** uavs){
     float length = Myfmin(uavControl->uavRange.measurement.data[uavControl->Jump_Dir],300);
     coordinateF_t item_end_point;
     if(length > STRIDE + AVOID_DISTANCE && uavControl->Jump_Rest_Step > 0){
-        if(length < STRIDE + BOTTOM && uavControl->Jump_Dir == DOWN){
-            uavControl->flag_jump = false;
-            uavControl->Jump_Rest_Step = 0;
-            return false;
-        }
+        // if(length < STRIDE + BOTTOM && uavControl->Jump_Dir == DOWN){
+        //     uavControl->flag_jump = false;
+        //     uavControl->Jump_Rest_Step = 0;
+        //     return false;
+        // }
         #ifdef HOST
             calPoint_Sim(&uavControl->uavRange.current_point, uavControl->Jump_Dir, STRIDE, &item_end_point);
         #else
             cal_PointByLength(STRIDE, -1 * uavControl->uavRange.measurement.pitch, uavControl->uavRange.measurement.roll, uavControl->uavRange.measurement.yaw, &uavControl->uavRange.current_point, uavControl->Jump_Dir, &item_end_point);
         #endif
-        // 细节待商榷
+        // 前进方向不安全，原地等待，更换方向
         if(CalMinDistance(uavControl, uavs, &item_end_point) < SAFE_DISTANCE){
-            uavControl->flag_jump = false;
-            return false;
+            uavControl->Jump_Dir = GetRandomDir(&uavControl->uavRange.measurement);
+            uavControl->next_point = uavControl->uavRange.current_point;
+            --uavControl->Jump_Rest_Step;
+            return true;
+            // uavControl->flag_jump = false;
+            // return false;
         }
         uavControl->next_point = item_end_point;
         --uavControl->Jump_Rest_Step;
@@ -201,7 +211,7 @@ bool JumpLocalOp(uavControl_t *uavControl,uavControl_t** uavs){
     }
 }
 
-bool CalNextPoint(uavControl_t* uavControl,octoMap_t* octoMap,uavControl_t** uavs){
+bool CalNextPoint(uavControl_t* uavControl,octoMap_t* octoMap,uavControl_t** uavs,coordinateF_t* edgePoint, uint8_t* weight_100){
     short index_loop = (((int)uavControl->uavRange.current_point.x + (int)uavControl->uavRange.current_point.y + (int)uavControl->uavRange.current_point.z) / TREE_RESOLUTION) % WINDOW_SIZE;;
     ++uavControl->loops[index_loop];
     if (uavControl->loops[index_loop] < MAX_LOOP)
@@ -212,10 +222,10 @@ bool CalNextPoint(uavControl_t* uavControl,octoMap_t* octoMap,uavControl_t** uav
             index_loop = pop(&uavControl->queue);
             --uavControl->loops[index_loop];
         }
-        if(!uavControl->flag_jump && !CalBestCandinates(octoMap, uavControl,uavs)){
+        if(!uavControl->flag_jump && !CalBestCandinates(octoMap, uavControl,uavs,edgePoint, weight_100)){
             uavControl->Jump_Dir = GetRandomDir(&uavControl->uavRange.measurement);
             if(uavControl->Jump_Dir == ERROR_DIR){
-                printF("no next Jump_Dir\n\n\n\n\n\n");
+                printF("no next Jump_Dir\n");
                 return false;
             }
             uavControl->flag_jump = true;
@@ -230,18 +240,20 @@ bool CalNextPoint(uavControl_t* uavControl,octoMap_t* octoMap,uavControl_t** uav
             uavControl->loops[i] = 0;
         }
         uavControl->Jump_Dir = GetRandomDir(&uavControl->uavRange.measurement);
-        if(uavControl->Jump_Dir == ERROR_DIR){
-            printF("no next Jump_Dir\n\n\n\n\n\n\n");
-            return false;
-        }
         uavControl->flag_jump = true;
         uavControl->Jump_Rest_Step = JUMP_MAX_STEP;
     }
     if(uavControl->flag_jump){
+        if(uavControl->Jump_Dir == ERROR_DIR){
+            printF("no JumpDir\n");
+            return false;
+        }
         if(!JumpLocalOp(uavControl,uavs)){
             --uavControl->loops[index_loop];
-            printF("isn't safe\n");
-            return CalNextPoint(uavControl, octoMap,uavs);
+            if(uavControl->flag_jump){
+                printF("isn't safe\n");
+            }
+            return CalNextPoint(uavControl, octoMap,uavs,edgePoint,weight_100);
         }
     }
     return true;
