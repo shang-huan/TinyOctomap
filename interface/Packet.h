@@ -38,7 +38,7 @@ typedef struct
 
 typedef struct
 {
-    // uint8_t weights_100[6];
+    uint8_t weights_100[6];
     uavRange_t uavRange;
 } __attribute__((packed)) explore_req_payload_t; // 48
 
