@@ -141,9 +141,9 @@ bool CalBestCandinates(octoMap_t *octoMap,uavControl_t* uavControl,uavControl_t*
             item_sum.income_info = DISCIPLINE;
         }
         // printF("cost_prune:%d,income_info:%d\n",item_sum.cost_prune,item_sum.income_info);
-        min_distance = CalMinDistance(uavControl, uavs, &candinates[i]);
         item_candinateCost = (double)uavControl->direction_weight[i] * (PROBABILITY_MEM(octoMap) * item_sum.cost_prune * COST_PRUNE_TIMES +
                                                     (1.0 - PROBABILITY_MEM(octoMap)) * item_sum.income_info * INCOME_INFO_TIMES);
+        min_distance = CalMinDistance(uavControl, uavs, &candinates[i]);
         if(CalAvoidWeight(min_distance) != 1){
             // printF("candinateCost_pre:%f,",item_candinateCost);
             item_candinateCost = CalAvoidWeight(min_distance) * item_candinateCost;
